@@ -71,13 +71,14 @@
       <DisableSpecificWarnings>4731;4838;4297;4267;4477</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opengl32.lib;sdl_net.lib;winmm.lib;zlib.lib;libpng.lib;sdlmain.lib;sdl.lib;curses.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wsock32.lib;iphlpapi.lib;dxguid.lib;opengl32.lib;sdl_net.lib;winmm.lib;sdlmain.lib;sdl.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>.\Debug/dosbox.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>.\Debug/dosbox.pdb</ProgramDatabaseFile>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalLibraryDirectories>.\Debug;..\SDL-1.2.15\VisualC\SDLmain\Debug;..\SDL_net-1.2.8\VisualC\Debug</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <TypeLibraryName>.\Debug/dosbox.tlb</TypeLibraryName>
@@ -87,6 +88,9 @@
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -115,15 +119,16 @@
       <DisableSpecificWarnings>4731;4838;4297;4267;4477</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opengl32.lib;winmm.lib;zlib.lib;libpng.lib;sdl_net.lib;sdlmain.lib;sdl.lib;curses.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wsock32.lib;iphlpapi.lib;dxguid.lib;opengl32.lib;winmm.lib;sdl_net.lib;sdlmain.lib;sdl.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>.\Release/dosbox.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile />
       <GenerateMapFile>true</GenerateMapFile>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
       <FixedBaseAddress>false</FixedBaseAddress>
+      <AdditionalLibraryDirectories>.\Release;..\SDL-1.2.15\VisualC\SDLmain\Release;..\SDL_net-1.2.8\VisualC\Release</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <TypeLibraryName>.\Release/dosbox.tlb</TypeLibraryName>
