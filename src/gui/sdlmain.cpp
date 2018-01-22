@@ -50,11 +50,21 @@
 #include "cross.h"
 #include "control.h"
 
+#include "crtemu.h"
+#include "crt_frame.h"
+
 #define MAPPERFILE "mapper-" VERSION ".map"
 //#define DISABLE_JOYSTICK
 
 #if C_OPENGL
 #include "SDL_opengl.h"
+
+#include <GL/gl.h>
+
+#define CRTEMU_IMPLEMENTATION
+#include "crtemu.h"
+
+static crtemu_t* crtemu = 0;
 
 #ifndef APIENTRY
 #define APIENTRY
@@ -934,6 +944,14 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 		break;
 #if C_OPENGL
 	case SCREEN_OPENGL:
+		{
+		glCallList(sdl.opengl.displaylist);
+        Bit8u *pixels = (Bit8u *)sdl.opengl.framebuf;
+        int time=GetTicks();
+		if( crtemu && pixels )
+			crtemu_present( crtemu, (CRTEMU_U64) time, (CRTEMU_U32 const*) pixels, sdl.opengl.pitch / 4, sdl.draw.height, 0xffffffff, 0xff000000 );
+		SDL_GL_SwapBuffers();
+/*
 #if defined(NVIDIA_PixelDataRange)
 		if (sdl.opengl.pixel_data_range) {
             glBindTexture(GL_TEXTURE_2D, sdl.opengl.texture);
@@ -963,7 +981,7 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 			glCallList(sdl.opengl.displaylist);
 			SDL_GL_SwapBuffers();
 		}
-		break;
+	*/		}break;
 #endif
 	default:
 		break;
@@ -1012,10 +1030,23 @@ void GFX_Stop() {
 	if (sdl.updating)
 		GFX_EndUpdate( 0 );
 	sdl.active=false;
+	if( crtemu )
+	{
+		crtemu_destroy( crtemu );
+		crtemu = 0;
+	}
 }
 
 void GFX_Start() {
 	sdl.active=true;
+	crtemu = crtemu_create( 0 );
+	if( crtemu ) crtemu_frame( crtemu, (CRTEMU_U32*) a_crt_frame, 1024, 1024);
+	if( sdl.desktop.fullscreen ) 
+		{
+		RECT rect;
+		GetClientRect( GetDesktopWindow(), &rect );		
+		glViewport( 0, 0, rect.right - rect.left, rect.bottom - rect.top );    
+		}
 }
 
 static void GUI_ShutDown(Section * /*sec*/) {

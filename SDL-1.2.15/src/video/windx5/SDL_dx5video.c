@@ -677,12 +677,14 @@ static HRESULT WINAPI EnumModes2(DDSURFACEDESC *desc, VOID *udata)
 #endif
 	int maxRefreshRate;
 
+#ifndef NO_CHANGEDISPLAYSETTINGS
 	if ( desc->dwWidth <= SDL_desktop_mode.dmPelsWidth &&
 	     desc->dwHeight <= SDL_desktop_mode.dmPelsHeight ) {
 		maxRefreshRate = SDL_desktop_mode.dmDisplayFrequency;
 	} else {
 		maxRefreshRate = 85;	/* safe value? */
 	}
+#endif
 
 	switch (bpp)  {
 		case 8:
@@ -1185,6 +1187,8 @@ SDL_Surface *DX5_SetVideoMode(_THIS, SDL_Surface *current,
 #endif
 		}
 
+		DWORD fullscr_flags = ~( WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX );
+		if( ( flags & SDL_FULLSCREEN ) == SDL_FULLSCREEN ) style &= fullscr_flags;
 		/* DJM: Don't piss of anyone who has setup his own window */
 		if ( !SDL_windowid )
 			SetWindowLong(SDL_Window, GWL_STYLE, style);
