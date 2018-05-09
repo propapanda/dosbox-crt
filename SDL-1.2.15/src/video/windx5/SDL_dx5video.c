@@ -1248,7 +1248,7 @@ SDL_Surface *DX5_SetVideoMode(_THIS, SDL_Surface *current,
 				GetWindowRect( GetDesktopWindow(), &rect );
 				height = rect.bottom - rect.top;
 				height -= height / 20;
-				width = (int)( height * 1.415f );
+				width = (int)( height * 1.423f );
 
 				if( b )
 					{
