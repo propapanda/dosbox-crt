@@ -537,12 +537,7 @@ static void DIB_ResizeWindow(_THIS, int width, int height, int prev_width, int p
 				}
 			}
 		}
-		swp_flags = (SWP_NOCOPYBITS | SWP_SHOWWINDOW);
 
-		bounds.left = SDL_windowX;
-		bounds.top = SDL_windowY;
-		bounds.right = SDL_windowX+width;
-		bounds.bottom = SDL_windowY+height;
 #ifndef _WIN32_WCE
 		AdjustWindowRectEx(&bounds, GetWindowLong(SDL_Window, GWL_STYLE), (GetMenu(SDL_Window) != NULL), 0);
 #else
@@ -562,12 +557,28 @@ static void DIB_ResizeWindow(_THIS, int width, int height, int prev_width, int p
 			y = bounds.top;
 		} else {
 			x = y = -1;
-			swp_flags |= SWP_NOMOVE;
+			//swp_flags |= SWP_NOMOVE;
 		}
 		if ( flags & SDL_FULLSCREEN ) {
 			top = HWND_TOPMOST;
 		} else {
 			top = HWND_NOTOPMOST;
+
+			RECT rect;
+			GetWindowRect( GetDesktopWindow(), &rect );
+			height = rect.bottom - rect.top;
+			height -= height / 2;
+			width = (int)( height * 1.37f );
+
+			SDL_windowX = ( (rect.right - rect.left ) - width ) / 2;
+			SDL_windowY = ( (rect.bottom - rect.top ) - height ) / 2;
+
+			swp_flags = (SWP_NOCOPYBITS | SWP_SHOWWINDOW);
+
+			bounds.left = SDL_windowX;
+			bounds.top = SDL_windowY;
+			bounds.right = SDL_windowX+width;
+			bounds.bottom = SDL_windowY+height;
 		}
 		SetWindowPos(SDL_Window, top, x, y, width, height, swp_flags);
 		if ( !(flags & SDL_FULLSCREEN) ) {

@@ -390,7 +390,6 @@ check_gotbpp:
 
 
 void GFX_ResetScreen(void) {
-
 	GFX_Stop();
 	if (sdl.draw.callback)
 		(sdl.draw.callback)( GFX_CallBackReset );
@@ -425,12 +424,6 @@ static SDL_Surface * GFX_SetupSurfaceScaled(Bit32u sdl_flags, Bit32u bpp) {
 		fixedHeight = sdl.desktop.full.fixed ? sdl.desktop.full.height : 0;
 		sdl_flags |= SDL_FULLSCREEN|SDL_HWSURFACE;
 	} else {
-        RECT rect;
-        GetWindowRect( GetDesktopWindow(), &rect );
-	    sdl.desktop.window.width  = rect.right - rect.left;
-	    sdl.desktop.window.height = rect.bottom - rect.top;
-        sdl.desktop.window.width -= sdl.desktop.window.width / 10;
-        sdl.desktop.window.height -= sdl.desktop.window.height / 10;
 		fixedWidth = sdl.desktop.window.width;
 		fixedHeight = sdl.desktop.window.height;
 		sdl_flags |= SDL_HWSURFACE;
@@ -448,7 +441,7 @@ static SDL_Surface * GFX_SetupSurfaceScaled(Bit32u sdl_flags, Bit32u bpp) {
 		if (sdl.desktop.fullscreen)
 			sdl.surface = SDL_SetVideoMode(fixedWidth,fixedHeight,bpp,sdl_flags);
 		else
-			sdl.surface = SDL_SetVideoMode(fixedWidth,fixedHeight,bpp,sdl_flags);
+			sdl.surface = SDL_SetVideoMode(sdl.clip.w,sdl.clip.h,bpp,sdl_flags);
 		if (sdl.surface && sdl.surface->flags & SDL_FULLSCREEN) {
 			sdl.clip.x=(Sint16)((sdl.surface->w-sdl.clip.w)/2);
 			sdl.clip.y=(Sint16)((sdl.surface->h-sdl.clip.h)/2);
@@ -682,10 +675,10 @@ dosurface:
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texsize, texsize, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, 0);
 
-		//glClearColor (0.0, 0.0, 0.0, 1.0);
-		//glClear(GL_COLOR_BUFFER_BIT);
-		//SDL_GL_SwapBuffers();
-		//glClear(GL_COLOR_BUFFER_BIT);
+		glClearColor (0.0, 0.0, 0.0, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT);
+		SDL_GL_SwapBuffers();
+		glClear(GL_COLOR_BUFFER_BIT);
 		glShadeModel (GL_FLAT);
 		glDisable (GL_DEPTH_TEST);
 		glDisable (GL_LIGHTING);
@@ -832,115 +825,6 @@ void GFX_RestoreMode(void) {
 }
 
 
-struct crt_context_t {
-    HDC hdc;
-    HGLRC gl_context;
-    SDL_mutex* mutex;
-    bool running;
-	Bit8u *pixels;
-	size_t capacity;
-	int width;
-	int height;
-} crt_context = { 0 };
-
-struct SDL_Thread* crt_thread_ptr;
-
-int crt_thread( void* user_data ) {
-    crt_context_t* context = (crt_context_t*) user_data;
-
-	context->capacity = 1024 * 1024;
-	context->pixels = (Bit8u*) malloc( context->capacity );
-	context->width = 0;
-	context->height = 0;
-
-	HGLRC otherctx = context->gl_context;
-
-	HGLRC glctx = wglCreateContext( context->hdc );
-	wglMakeCurrent( context->hdc, glctx );
-
-	crtemu = crtemu_create( 0 );
-	if( crtemu ) crtemu_frame( crtemu, (CRTEMU_U32*) a_crt_frame, 1024, 1024);
-
-    UINT64 clock_freq;
-	UINT64 prev_clock = 0;
-   // int frame_rate_lock = 70;
-   // HANDLE waitable_timer;
-
-	int present_width = 0;
-	int present_height = 0;
-
-	LARGE_INTEGER f;
-	QueryPerformanceFrequency( &f );
-    clock_freq = (UINT64) f.QuadPart;
-
-//	waitable_timer = CreateWaitableTimer(NULL, TRUE, NULL);
-
-    while( context->running ) {
-	    UINT64 curr_clock = 0ULL;
-		LARGE_INTEGER c;
-		QueryPerformanceCounter( &c );
-		curr_clock = (UINT64) c.QuadPart;
-
-        UINT64 delta = 0ULL;
-		//if( curr_clock > prev_clock )
-		//	delta = curr_clock - prev_clock - 1ULL;
-		//if( delta < clock_freq / frame_rate_lock ) {
-		//	UINT64 wait = ( clock_freq / frame_rate_lock ) - delta;
-		//	if( wait > 0 ) {
-		//		LARGE_INTEGER due_time;
-		//		due_time.QuadPart = - (LONGLONG) ( ( 10000000ULL * wait ) / clock_freq ) ;
-
-		//		SetWaitableTimer( waitable_timer, &due_time, 0, 0, 0, FALSE );
-		//		WaitForSingleObject( waitable_timer, 200 ); // wait long enough for timer to trigger ( 200ms == 5fps )
-		//		CancelWaitableTimer( waitable_timer ); // in case we timed out
-		//		}
-		//	curr_clock += wait;
-		//	}
-		if( wglGetCurrentContext() != glctx ) continue;
-
-        int time=GetTicks();
-        SDL_LockMutex( context->mutex );	
-		if( context->gl_context != otherctx )
-			{
-			if( context->hdc != INVALID_HANDLE_VALUE && context->hdc !=  0 )
-				{
-				otherctx = context->gl_context;
-				wglMakeCurrent( NULL, NULL );
-				wglDeleteContext( glctx );
-				crtemu->glClear( CRTEMU_GL_COLOR_BUFFER_BIT );
-				crtemu_destroy( crtemu );
-				crtemu = 0;
-			again:
-				SDL_UnlockMutex( context->mutex );
-		//		Sleep( 100 );
-				SDL_LockMutex( context->mutex );		
-				glctx = wglCreateContext( context->hdc );
-				if( !glctx ) goto again;
-				wglMakeCurrent( context->hdc, glctx );
-				crtemu = crtemu_create( 0 );
-				crtemu_frame( crtemu, (CRTEMU_U32*) a_crt_frame, 1024, 1024);
-				}
-			}
-		if( context->width > 0 && context->height > 0 )
-			{
-			present_width = context->width;
-			present_height = context->height;
-			}
-		crtemu_present( crtemu, (CRTEMU_U64) time, (CRTEMU_U32 const*) context->pixels, present_width, present_height, 0xffffffff, 0xff000000 );
-		SwapBuffers( context->hdc );
-        SDL_UnlockMutex( context->mutex );
-    }
-
-	//if( wglGetCurrentContext() == glctx ) crtemu_destroy( crtemu );
-    wglMakeCurrent( NULL, NULL );
-	wglDeleteContext( glctx );
-	crtemu = 0;
-    return 0;
-}
-
-
-
-
 bool GFX_StartUpdate(Bit8u * & pixels,Bitu & pitch) {
 	if (!sdl.active || sdl.updating)
 		return false;
@@ -1062,27 +946,11 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 	case SCREEN_OPENGL:
 		{
 		//glCallList(sdl.opengl.displaylist);
-        int time=GetTicks();
-		if( crt_context.mutex )
-			{
-			SDL_LockMutex( crt_context.mutex );		
-			if( crt_context.capacity < ( sdl.opengl.pitch / 4 ) * sdl.draw.height * sizeof( uint32_t ) )
-				{
-				crt_context.capacity = ( sdl.opengl.pitch / 4 ) * sdl.draw.height * sizeof( uint32_t ) * 2;
-				crt_context.pixels = (Bit8u *)realloc( crt_context.pixels, crt_context.capacity );
-				}
-			memcpy( crt_context.pixels, sdl.opengl.framebuf, ( sdl.opengl.pitch / 4 ) * sdl.draw.height * sizeof( uint32_t ) );
-			crt_context.width = sdl.opengl.pitch / 4;
-			crt_context.height = sdl.draw.height;
-			crt_context.gl_context = wglGetCurrentContext();
-			crt_context.hdc = wglGetCurrentDC();
-			SDL_UnlockMutex( crt_context.mutex );
-
-			}
-
-//		if( crtemu && pixels )
-//			crtemu_present( crtemu, (CRTEMU_U64) time, (CRTEMU_U32 const*) pixels, sdl.opengl.pitch / 4, sdl.draw.height, 0xffffffff, 0xff000000 );
-//		SDL_GL_SwapBuffers();
+  //      Bit8u *pixels = (Bit8u *)sdl.opengl.framebuf;
+  //      int time=GetTicks();
+		//if( crtemu && pixels )
+		//	crtemu_present( crtemu, (CRTEMU_U64) time, (CRTEMU_U32 const*) pixels, sdl.opengl.pitch / 4, sdl.draw.height, 0xffffffff, 0xff000000 );
+		//SDL_GL_SwapBuffers();
 /*
 #if defined(NVIDIA_PixelDataRange)
 		if (sdl.opengl.pixel_data_range) {
@@ -1158,32 +1026,99 @@ Bitu GFX_GetRGB(Bit8u red,Bit8u green,Bit8u blue) {
 	return 0;
 }
 
+
+struct crt_context_t {
+    HDC hdc;
+    HGLRC gl_context;
+    SDL_mutex* mutex;
+    bool running;
+};
+
+struct SDL_Thread* crt_thread_ptr;
+crt_context_t crt_context;
+
 void GFX_Stop() {
-	//if( crtemu ) {
- //       crt_context.running = false;
- //       SDL_WaitThread( crt_thread_ptr, NULL );
- //   }
+	if( crtemu ) {
+        crt_context.running = false;
+        SDL_WaitThread( crt_thread_ptr, NULL );
+        wglMakeCurrent( crt_context.hdc, crt_context.gl_context );
+    }
 	if (sdl.updating)
 		GFX_EndUpdate( 0 );
 	sdl.active=false;
+	if( crtemu ) {
+		crtemu_destroy( crtemu );
+		crtemu = 0;
+	}
 }
+
+
+int crt_thread( void* user_data ) {
+    crt_context_t* context = (crt_context_t*) user_data;
+
+    UINT64 clock_freq;
+	UINT64 prev_clock = 0;
+    int frame_rate_lock = 60;
+    HANDLE waitable_timer;
+
+	LARGE_INTEGER f;
+	QueryPerformanceFrequency( &f );
+    clock_freq = (UINT64) f.QuadPart;
+
+	waitable_timer = CreateWaitableTimer(NULL, TRUE, NULL);
+
+    while( context->running ) {
+	    UINT64 curr_clock = 0ULL;
+		LARGE_INTEGER c;
+		QueryPerformanceCounter( &c );
+		curr_clock = (UINT64) c.QuadPart;
+
+        UINT64 delta = 0ULL;
+		if( curr_clock > prev_clock )
+			delta = curr_clock - prev_clock - 1ULL;
+		if( delta < clock_freq / frame_rate_lock ) {
+			UINT64 wait = ( clock_freq / frame_rate_lock ) - delta;
+			if( wait > 0 ) {
+				LARGE_INTEGER due_time;
+				due_time.QuadPart = - (LONGLONG) ( ( 10000000ULL * wait ) / clock_freq ) ;
+
+				SetWaitableTimer( waitable_timer, &due_time, 0, 0, 0, FALSE );
+				WaitForSingleObject( waitable_timer, 200 ); // wait long enough for timer to trigger ( 200ms == 5fps )
+				CancelWaitableTimer( waitable_timer ); // in case we timed out
+				}
+			curr_clock += wait;
+			}
+
+//        SDL_LockMutex( context->mutex );
+        wglMakeCurrent( context->hdc, context->gl_context );
+        glCallList(sdl.opengl.displaylist);
+        Bit8u *pixels = (Bit8u *)sdl.opengl.framebuf;
+        int time=GetTicks();
+		if( crtemu && pixels )
+			crtemu_present( crtemu, (CRTEMU_U64) time, (CRTEMU_U32 const*) pixels, sdl.opengl.pitch / 4, sdl.draw.height, 0xffffffff, 0xff000000 );
+		SDL_GL_SwapBuffers();
+        wglMakeCurrent( NULL, NULL );
+  //      SDL_UnlockMutex( context->mutex );
+    }
+    return 0;
+}
+
 
 void GFX_Start() {
 	sdl.active=true;
-	if( sdl.desktop.fullscreen )
-		{
+	crtemu = crtemu_create( 0 );
+	if( crtemu ) crtemu_frame( crtemu, (CRTEMU_U32*) a_crt_frame, 1024, 1024);
+	if( sdl.desktop.fullscreen ) {
 		RECT rect;
 		GetClientRect( GetDesktopWindow(), &rect );		
 		glViewport( 0, 0, rect.right - rect.left, rect.bottom - rect.top );    
-		}
-	if( !crtemu )
-		{
-		crt_context.hdc = wglGetCurrentDC();
-		crt_context.gl_context = wglGetCurrentContext();
-		crt_context.mutex = SDL_CreateMutex();
-		crt_context.running = true;
-		crt_thread_ptr = SDL_CreateThread( crt_thread, &crt_context );
-		}
+	}
+    crt_context.hdc = wglGetCurrentDC();
+    crt_context.gl_context = wglGetCurrentContext();
+    crt_context.mutex = SDL_CreateMutex();
+    crt_context.running = true;
+    wglMakeCurrent( NULL, NULL );
+    crt_thread_ptr = SDL_CreateThread( crt_thread, &crt_context );
 }
 
 static void GUI_ShutDown(Section * /*sec*/) {
@@ -1330,6 +1265,8 @@ static void GUI_StartUp(Section * sec) {
 		}
 	}
 
+	sdl.desktop.window.width  = 0;
+	sdl.desktop.window.height = 0;
 	const char* windowresolution=section->Get_string("windowresolution");
 	if(windowresolution && *windowresolution) {
 		char res[100];
@@ -1344,7 +1281,6 @@ static void GUI_StartUp(Section * sec) {
 			}
 		}
 	}
-
 	sdl.desktop.doublebuf=section->Get_bool("fulldouble");
 	if (!sdl.desktop.full.width) {
 #ifdef WIN32
@@ -1981,12 +1917,6 @@ static void erasemapperfile() {
 
 //extern void UI_Init(void);
 int main(int argc, char* argv[]) {
-	DEVMODEA mode;
-	EnumDisplaySettings( NULL,  ENUM_CURRENT_SETTINGS, &mode);
-	mode.dmDisplayFrequency = 70;
-	if( ChangeDisplaySettingsA( &mode, CDS_TEST ) == 0 ) 
-		ChangeDisplaySettingsA( &mode, 0 );
-
 	try {
 		CommandLine com_line(argc,argv);
 		Config myconf(&com_line);

@@ -156,6 +156,7 @@ struct crtemu_t
 
 	struct HINSTANCE__* gl_dll;
     int (CRTEMU_GLCALLTYPE *wglGetProcAddress) (char const* );
+    BOOL (CRTEMU_GLCALLTYPE *wglSwapIntervalEXT) (int);
     void (CRTEMU_GLCALLTYPE* glTexParameterfv) (CRTEMU_GLenum target, CRTEMU_GLenum pname, CRTEMU_GLfloat const* params);
     void (CRTEMU_GLCALLTYPE* glDeleteFramebuffers) (CRTEMU_GLsizei n, CRTEMU_GLuint const* framebuffers);
     void (CRTEMU_GLCALLTYPE* glGetIntegerv) (CRTEMU_GLenum pname, CRTEMU_GLint *data);
@@ -289,6 +290,10 @@ crtemu_t* crtemu_create( void* memctx )
 
     crtemu->wglGetProcAddress = (int (CRTEMU_GLCALLTYPE*)(char const*)) (uintptr_t) GetProcAddress( crtemu->gl_dll, "wglGetProcAddress" );
     if( !crtemu->gl_dll ) goto failed;
+
+	crtemu->wglSwapIntervalEXT = (BOOL (CRTEMU_GLCALLTYPE*)(int)) (uintptr_t) crtemu->wglGetProcAddress( "wglSwapIntervalEXT" );
+	if( crtemu->wglSwapIntervalEXT ) crtemu->wglSwapIntervalEXT( 1 );
+
 
     // Attempt to bind opengl functions using GetProcAddress
     crtemu->glTexParameterfv = ( void (CRTEMU_GLCALLTYPE*) (CRTEMU_GLenum, CRTEMU_GLenum, CRTEMU_GLfloat const*) ) (uintptr_t) GetProcAddress( crtemu->gl_dll, "glTexParameterfv" );

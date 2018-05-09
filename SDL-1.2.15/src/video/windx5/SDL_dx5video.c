@@ -1201,8 +1201,10 @@ SDL_Surface *DX5_SetVideoMode(_THIS, SDL_Surface *current,
 			UINT swp_flags;
 			const char *window = NULL;
 			const char *center = NULL;
+			BOOL b = FALSE;
 
 			if ( video->w != prev_w || video->h != prev_h ) {
+				b = TRUE;
 				window = SDL_getenv("SDL_VIDEO_WINDOW_POS");
 				center = SDL_getenv("SDL_VIDEO_CENTERED");
 				if ( window ) {
@@ -1215,6 +1217,7 @@ SDL_Surface *DX5_SetVideoMode(_THIS, SDL_Surface *current,
 					}
 				}
 			}
+
 			swp_flags = (SWP_NOCOPYBITS | SWP_SHOWWINDOW);
 
 			bounds.left = SDL_windowX;
@@ -1241,6 +1244,20 @@ SDL_Surface *DX5_SetVideoMode(_THIS, SDL_Surface *current,
 				top = HWND_TOPMOST;
 			} else {
 				top = HWND_NOTOPMOST;
+				RECT rect;
+				GetWindowRect( GetDesktopWindow(), &rect );
+				height = rect.bottom - rect.top;
+				height -= height / 20;
+				width = (int)( height * 1.415f );
+
+				if( b )
+					{
+					SDL_windowX = ( (rect.right - rect.left ) - width ) / 2;
+					SDL_windowY = ( (rect.bottom - rect.top ) - height ) / 2;
+					x = SDL_windowX;
+					y = SDL_windowY;
+					swp_flags &= ~SWP_NOMOVE;
+					}
 			}
 			SetWindowPos(SDL_Window, top, x, y, width, height, swp_flags);
 			if ( !(flags & SDL_FULLSCREEN) ) {
@@ -1620,6 +1637,7 @@ SDL_Surface *DX5_SetVideoMode(_THIS, SDL_Surface *current,
 					}
 				}
 			}
+
 			swp_flags = SWP_NOCOPYBITS;
 
 			bounds.left = SDL_windowX;
@@ -1637,8 +1655,16 @@ SDL_Surface *DX5_SetVideoMode(_THIS, SDL_Surface *current,
 				y = bounds.top;
 			} else {
 				x = y = -1;
-				swp_flags |= SWP_NOMOVE;
+//				swp_flags |= SWP_NOMOVE;
 			}
+			RECT rect;
+			GetWindowRect( GetDesktopWindow(), &rect );
+			height = rect.bottom - rect.top;
+			height -= height / 2;
+			width = (int)( height * 1.37f );
+
+			SDL_windowX = ( (rect.right - rect.left ) - width ) / 2;
+			SDL_windowY = ( (rect.bottom - rect.top ) - height ) / 2;
 			SetWindowPos(SDL_Window, HWND_NOTOPMOST, x, y, width, height, swp_flags);
 			SDL_windowX = SDL_bounds.left;
 			SDL_windowY = SDL_bounds.top;
