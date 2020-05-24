@@ -928,22 +928,29 @@ void crtemu_present( crtemu_t* crtemu, CRTEMU_U64 time_us, CRTEMU_U32 const* pix
 
     int window_width = viewport[ 2 ] - viewport[ 0 ];
     int window_height = viewport[ 3 ] - viewport[ 1 ];
+    int scaled_w = (int)( window_height * ( 4.3f / 3.0f ) );
+    int scaled_h = (int)( window_width * ( 3.0f / 4.3f ) );
 
-    float hscale = window_width / (float) width;
-    float vscale = window_height / ( (float) height * 1.1f );
-    float pixel_scale = hscale < vscale ? hscale : vscale;
+    if( scaled_h > window_height && scaled_w <= window_width) {
+        window_width = scaled_w;
+        window_height = (int)( scaled_w * ( 3.0f / 4.3f ) );
+    } else if( scaled_w > window_width && scaled_h <= window_height ) {
+        window_height = scaled_h;
+        window_width = (int)( scaled_h * ( 4.3f / 3.0f ) );
+    } 
+ 
+    float hborder = ( ( viewport[ 2 ] - viewport[ 0 ] ) - window_width ) / 2.0f;
+    float vborder = ( ( viewport[ 3 ] - viewport[ 1 ] ) - window_height ) / 2.0f;
 
-    float hborder = ( window_width - pixel_scale * width ) / 2.0f;
-    float vborder = ( window_height - pixel_scale * height * 1.1f ) / 2.0f;
     float x1 = hborder;
     float y1 = vborder;
-    float x2 = x1 + pixel_scale * width;
-    float y2 = y1 + pixel_scale * height * 1.1f;
+    float x2 = x1 + window_width;
+    float y2 = y1 + window_height;
 
-    x1 = ( x1 / window_width ) * 2.0f - 1.0f;
-    x2 = ( x2 / window_width ) * 2.0f - 1.0f;
-    y1 = ( y1 / window_height ) * 2.0f - 1.0f;
-    y2 = ( y2 / window_height ) * 2.0f - 1.0f;
+    x1 = ( x1 / ( viewport[ 2 ] - viewport[ 0 ] )  ) * 2.0f - 1.0f;
+    x2 = ( x2 / ( viewport[ 2 ] - viewport[ 0 ] )  ) * 2.0f - 1.0f;
+    y1 = ( y1 / ( viewport[ 3 ] - viewport[ 1 ] ) ) * 2.0f - 1.0f;
+    y2 = ( y2 / ( viewport[ 3 ] - viewport[ 1 ] ) ) * 2.0f - 1.0f;
 
     CRTEMU_GLfloat screen_vertices[] = 
         { 
