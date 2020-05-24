@@ -836,6 +836,7 @@ void crtemu_present( crtemu_t* crtemu, CRTEMU_U64 time_us, CRTEMU_U32 const* pix
 	crtemu->last_present_width = width;
 	crtemu->last_present_height = height;
 
+    {
 	float x1 = -1.0f, y1 = -1.0f, x2 = 1.0f, y2 = 1.0f;
 
     CRTEMU_GLfloat vertices[] = 
@@ -847,6 +848,7 @@ void crtemu_present( crtemu_t* crtemu, CRTEMU_U64 time_us, CRTEMU_U32 const* pix
         };
 	crtemu->glBufferData( CRTEMU_GL_ARRAY_BUFFER, 4 * 4 * sizeof( CRTEMU_GLfloat ), vertices, CRTEMU_GL_STATIC_DRAW );
 	crtemu->glBindBuffer( CRTEMU_GL_ARRAY_BUFFER, crtemu->vertexbuffer );
+    }
 
     // Copy to backbuffer
     crtemu->glActiveTexture( CRTEMU_GL_TEXTURE0 );
@@ -920,21 +922,55 @@ void crtemu_present( crtemu_t* crtemu, CRTEMU_U64 time_us, CRTEMU_U32 const* pix
 
 
     // Present to screen with CRT shader
-	crtemu->glBindFramebuffer( CRTEMU_GL_FRAMEBUFFER, 0 );
+    crtemu->glBindFramebuffer( CRTEMU_GL_FRAMEBUFFER, 0 );
 
     crtemu->glViewport( viewport[ 0 ], viewport[ 1 ], viewport[ 2 ], viewport[ 3 ] );
 
     int window_width = viewport[ 2 ] - viewport[ 0 ];
     int window_height = viewport[ 3 ] - viewport[ 1 ];
 
-    float r = ( ( border_xbgr >> 16 ) & 0xff ) / 255.0f;
-	float g = ( ( border_xbgr >> 8  ) & 0xff ) / 255.0f;
-	float b = ( ( border_xbgr       ) & 0xff ) / 255.0f;
-	crtemu->glClearColor( r, g, b, 1.0f );
-	crtemu->glClear( CRTEMU_GL_COLOR_BUFFER_BIT );
+    float hscale = window_width / (float) width;
+    float vscale = window_height / ( (float) height * 1.1f );
+    float pixel_scale = hscale < vscale ? hscale : vscale;
 
-    crtemu->glUseProgram( crtemu->crt_shader );
-    
+    float hborder = ( window_width - pixel_scale * width ) / 2.0f;
+    float vborder = ( window_height - pixel_scale * height * 1.1f ) / 2.0f;
+    float x1 = hborder;
+    float y1 = vborder;
+    float x2 = x1 + pixel_scale * width;
+    float y2 = y1 + pixel_scale * height * 1.1f;
+
+    x1 = ( x1 / window_width ) * 2.0f - 1.0f;
+    x2 = ( x2 / window_width ) * 2.0f - 1.0f;
+    y1 = ( y1 / window_height ) * 2.0f - 1.0f;
+    y2 = ( y2 / window_height ) * 2.0f - 1.0f;
+
+    CRTEMU_GLfloat screen_vertices[] = 
+        { 
+        0.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 1.0f,
+        0.0f, 0.0f, 0.0f, 1.0f,
+        };
+    screen_vertices[  0 ] = x1;
+    screen_vertices[  1 ] = y1;
+    screen_vertices[  4 ] = x2;
+    screen_vertices[  5 ] = y1;
+    screen_vertices[  8 ] = x2;
+    screen_vertices[  9 ] = y2;
+    screen_vertices[ 12 ] = x1;
+    screen_vertices[ 13 ] = y2;
+
+    crtemu->glBufferData( CRTEMU_GL_ARRAY_BUFFER, 4 * 4 * sizeof( CRTEMU_GLfloat ), screen_vertices, CRTEMU_GL_STATIC_DRAW );
+    crtemu->glBindBuffer( CRTEMU_GL_ARRAY_BUFFER, crtemu->vertexbuffer );
+
+    float r = ( ( border_xbgr >> 16 ) & 0xff ) / 255.0f;
+    float g = ( ( border_xbgr >> 8  ) & 0xff ) / 255.0f;
+    float b = ( ( border_xbgr       ) & 0xff ) / 255.0f;
+    crtemu->glClearColor( r, g, b, 1.0f );
+    crtemu->glClear( CRTEMU_GL_COLOR_BUFFER_BIT );
+
+    crtemu->glUseProgram( crtemu->crt_shader );    
 	crtemu->glUniform1i( crtemu->glGetUniformLocation( crtemu->crt_shader, "backbuffer" ), 0 );
 	crtemu->glUniform1i( crtemu->glGetUniformLocation( crtemu->crt_shader, "blurbuffer" ), 1 );
 	crtemu->glUniform1i( crtemu->glGetUniformLocation( crtemu->crt_shader, "frametexture" ), 2 );
