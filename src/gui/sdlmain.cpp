@@ -926,7 +926,7 @@ int crt_thread( void* user_data ) {
 			present_width = context->width;
 			present_height = context->height;
 			}
-		crtemu_present( crtemu, (CRTEMU_U64) time, (CRTEMU_U32 const*) context->pixels, present_width, present_height, 0xffffffff, 0xff000000 );
+		crtemu_present( crtemu, (CRTEMU_U64) time, (CRTEMU_U32 const*) context->pixels, present_width, present_height, 0xffffffff, 0xff282828  );
 		SwapBuffers( context->hdc );
         SDL_UnlockMutex( context->mutex );
     }
