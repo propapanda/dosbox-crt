@@ -1240,14 +1240,22 @@ SDL_Surface *DX5_SetVideoMode(_THIS, SDL_Surface *current,
 				x = y = -1;
 				swp_flags |= SWP_NOMOVE;
 			}
-			if ( flags & SDL_FULLSCREEN ) {
+
+			if ( flags & SDL_FULLSCREEN )
+			{
 				top = HWND_TOPMOST;
-			} else {
+			}
+			else 
+			{
 				top = HWND_NOTOPMOST;
 				RECT rect;
 				GetWindowRect( GetDesktopWindow(), &rect );
-				height = rect.bottom - rect.top;
-				height -= height / 20;
+
+				// tlr - preserve the target height
+				//height = rect.bottom - rect.top;
+				//height -= height / 20;
+				// tlr - preserve the target height
+
 				width = (int)( height * 1.423f );
 
 				if( b )
@@ -1259,6 +1267,8 @@ SDL_Surface *DX5_SetVideoMode(_THIS, SDL_Surface *current,
 					swp_flags &= ~SWP_NOMOVE;
 					}
 			}
+
+
 			SetWindowPos(SDL_Window, top, x, y, width, height, swp_flags);
 			if ( !(flags & SDL_FULLSCREEN) ) {
 				SDL_windowX = SDL_bounds.left;

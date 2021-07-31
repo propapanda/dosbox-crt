@@ -800,6 +800,7 @@ static void crtemu_internal_blur( crtemu_t* crtemu, CRTEMU_GLuint source, CRTEMU
 void crtemu_present( crtemu_t* crtemu, CRTEMU_U64 time_us, CRTEMU_U32 const* pixels_xbgr, int width, int height, 
     CRTEMU_U32 mod_xbgr, CRTEMU_U32 border_xbgr )
     {
+    if( !crtemu ) return;
     int viewport[ 4 ];
     crtemu->glGetIntegerv( CRTEMU_GL_VIEWPORT, viewport );
 

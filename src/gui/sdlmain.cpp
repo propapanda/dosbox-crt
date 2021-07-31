@@ -425,12 +425,19 @@ static SDL_Surface * GFX_SetupSurfaceScaled(Bit32u sdl_flags, Bit32u bpp) {
 		fixedHeight = sdl.desktop.full.fixed ? sdl.desktop.full.height : 0;
 		sdl_flags |= SDL_FULLSCREEN|SDL_HWSURFACE;
 	} else {
-        RECT rect;
-        GetWindowRect( GetDesktopWindow(), &rect );
-	    sdl.desktop.window.width  = rect.right - rect.left;
-	    sdl.desktop.window.height = rect.bottom - rect.top;
-        sdl.desktop.window.width -= sdl.desktop.window.width / 10;
-        sdl.desktop.window.height -= sdl.desktop.window.height / 10;
+
+		// TLR only set this if the window res hasn't been set
+		if ((sdl.desktop.window.width == 0) || (sdl.desktop.window.height == 0))
+		{
+			RECT rect;
+			GetWindowRect(GetDesktopWindow(), &rect);
+			sdl.desktop.window.width = rect.right - rect.left;
+			sdl.desktop.window.height = rect.bottom - rect.top;
+			sdl.desktop.window.width -= sdl.desktop.window.width / 10;
+			sdl.desktop.window.height -= sdl.desktop.window.height / 10;
+		}
+		// TLR only set this if the window res hasn't been set
+
 		fixedWidth = sdl.desktop.window.width;
 		fixedHeight = sdl.desktop.window.height;
 		sdl_flags |= SDL_HWSURFACE;
