@@ -51,7 +51,6 @@
 #include "control.h"
 
 #include "crtemu.h"
-#include "crt_frame.h"
 
 #define MAPPERFILE "mapper-" VERSION ".map"
 //#define DISABLE_JOYSTICK
@@ -866,7 +865,6 @@ int crt_thread( void* user_data ) {
 	wglMakeCurrent( context->hdc, glctx );
 
 	crtemu = crtemu_create( 0 );
-	if( crtemu ) crtemu_frame( crtemu, (CRTEMU_U32*) a_crt_frame, 1024, 1024);
 
     UINT64 clock_freq;
 	UINT64 prev_clock = 0;
@@ -925,7 +923,6 @@ int crt_thread( void* user_data ) {
 				if( !glctx ) goto again;
 				wglMakeCurrent( context->hdc, glctx );
 				crtemu = crtemu_create( 0 );
-				crtemu_frame( crtemu, (CRTEMU_U32*) a_crt_frame, 1024, 1024);
 				}
 			}
 		if( context->width > 0 && context->height > 0 )

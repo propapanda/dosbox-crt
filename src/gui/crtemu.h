@@ -27,8 +27,6 @@ crtemu_t* crtemu_create( void* memctx );
 
 void crtemu_destroy( crtemu_t* crtemu );
 
-void crtemu_frame( crtemu_t* crtemu, CRTEMU_U32* frame_abgr, int frame_width, int frame_height );
-
 void crtemu_present( crtemu_t* crtemu, CRTEMU_U64 time_us, CRTEMU_U32 const* pixels_xbgr, int width, int height, 
     CRTEMU_U32 mod_xbgr, CRTEMU_U32 border_xbgr );
 
@@ -751,18 +749,6 @@ void crtemu_destroy( crtemu_t* crtemu )
     crtemu->glDeleteBuffers( 1, &crtemu->vertexbuffer );
     FreeLibrary( crtemu->gl_dll );
     CRTEMU_FREE( crtemu->memctx, crtemu );
-    }
-
-
-void crtemu_frame( crtemu_t* crtemu, CRTEMU_U32* frame_abgr, int frame_width, int frame_height )
-    {
-    crtemu->glActiveTexture( CRTEMU_GL_TEXTURE3 );
-    crtemu->glBindTexture( CRTEMU_GL_TEXTURE_2D, crtemu->frametexture );   
-    crtemu->glTexImage2D( CRTEMU_GL_TEXTURE_2D, 0, CRTEMU_GL_RGBA, frame_width, frame_height, 0, CRTEMU_GL_RGBA, CRTEMU_GL_UNSIGNED_BYTE, frame_abgr ); 
-    if( frame_abgr )
-        crtemu->use_frame = 1.0f;
-    else
-        crtemu->use_frame = 0.0f;
     }
 
 
